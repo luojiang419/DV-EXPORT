@@ -1,0 +1,6 @@
+# 006 导出设置失败修复前
+
+- 创建时间：2026-06-01
+- 说明：修复导出阶段 `SetRenderSettings` 失败前的本地阶段备份
+- 备份文件：`source.tar`
+- 备注：本次仓库仍缺少 `tool/pre_backup_push.sh` 且未配置 Git 远端，未能执行规则中的 GitHub 检查点推送

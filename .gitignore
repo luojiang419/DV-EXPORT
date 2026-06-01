@@ -1,0 +1,8 @@
+批量导出/node_modules/
+批量导出/.vite/
+批量导出/coverage/
+批量导出/build/
+批量导出/dist/
+!批量导出/dist/.gitkeep
+批量导出/tmp/
+*.log
