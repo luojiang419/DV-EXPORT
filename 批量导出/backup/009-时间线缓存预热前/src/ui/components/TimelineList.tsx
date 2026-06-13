@@ -14,7 +14,7 @@ export function TimelineList({ timelines, selectedIds, isLoading = false, onSele
         {isLoading ? (
           <div className="timeline-list__loading">
             <span className="loading-spinner" />
-            <span>正在读取时间线信息...</span>
+            <span>正在扫描时间线...</span>
           </div>
         ) : (
           <div className="empty-panel">当前文件夹内没有可识别的时间线。</div>
@@ -28,7 +28,7 @@ export function TimelineList({ timelines, selectedIds, isLoading = false, onSele
       {isLoading ? (
         <div className="timeline-list__loading">
           <span className="loading-spinner" />
-          <span>正在读取时间线信息...</span>
+          <span>正在扫描时间线...</span>
         </div>
       ) : null}
       <div className={`timeline-list ${isLoading ? "is-loading" : ""}`}>

@@ -12,12 +12,6 @@ export interface TimelineEntry {
   frameRate?: number;
 }
 
-export interface TimelineCacheStatus {
-  projectKey: string;
-  folderCount: number;
-  timelineCount: number;
-}
-
 export interface RenderPresetOption {
   id: string;
   label: string;

@@ -107,35 +107,8 @@ export function App() {
   const [namingTemplate, setNamingTemplate] = useState(persistedSettings.namingTemplate);
   const [lastResult, setLastResult] = useState<ExportBatchResponse | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [isPreparingTimelineCache, setIsPreparingTimelineCache] = useState(true);
   const [isScanningTimelines, setIsScanningTimelines] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    async function prepareTimelineCache() {
-      try {
-        setIsPreparingTimelineCache(true);
-        await new Promise((resolve) => window.setTimeout(resolve, 16));
-        await bridge.prepareTimelineCache();
-      } catch (cacheError) {
-        if (!isCancelled) {
-          setError(cacheError instanceof Error ? cacheError.message : "读取时间线信息失败。");
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsPreparingTimelineCache(false);
-        }
-      }
-    }
-
-    void prepareTimelineCache();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [bridge]);
 
   useEffect(() => {
     async function bootstrap() {
@@ -365,11 +338,11 @@ export function App() {
         <section className="panel panel--center">
           <div className="panel__header">
             <h2>时间线列表</h2>
-            <span>{isPreparingTimelineCache ? "正在读取时间线信息并建立缓存" : "支持单选、Ctrl/Command 多选、Shift 连选"}</span>
+            <span>支持单选、Ctrl/Command 多选、Shift 连选</span>
           </div>
           <div className="panel__body panel__body--scroll">
             <TimelineList
-              isLoading={isPreparingTimelineCache || isScanningTimelines}
+              isLoading={isScanningTimelines}
               timelines={timelines}
               selectedIds={selectedTimelineIds}
               onSelect={(timelineId, modifiers) => {

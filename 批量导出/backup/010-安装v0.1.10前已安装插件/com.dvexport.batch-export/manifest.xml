@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BlackmagicDesign>
+  <Plugin>
+    <Id>com.dvexport.batch-export</Id>
+    <Name>达芬奇批量导出</Name>
+    <Version>0.1.9</Version>
+    <Description>按媒体池文件夹批量选择时间线并执行统一导出。</Description>
+    <FilePath>main.js</FilePath>
+  </Plugin>
+</BlackmagicDesign>

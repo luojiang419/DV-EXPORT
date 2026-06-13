@@ -1,0 +1,6 @@
+{
+  "name": "DaVinci Resolve Batch Export",
+  "version": "0.1.9",
+  "description": "Resolve batch export workflow integration plugin",
+  "main": "main.js"
+}

@@ -260,17 +260,6 @@ function ensureProjectCaches(project) {
   cachedTimelineScan = scanProjectTimelines(project);
 }
 
-function prepareTimelineCache() {
-  const { project } = getProjectContext();
-  ensureProjectCaches(project);
-
-  return {
-    projectKey: cachedProjectKey,
-    folderCount: cachedFolderMap.size,
-    timelineCount: cachedTimelineScan.length
-  };
-}
-
 function listTimelinesInFolder(folderId) {
   const { project } = getProjectContext();
   ensureProjectCaches(project);
@@ -817,9 +806,6 @@ const bridge = {
   },
   async getFolderTimelines(folderId) {
     return listTimelinesInFolder(folderId);
-  },
-  async prepareTimelineCache() {
-    return prepareTimelineCache();
   },
   async getRenderOptions(selection) {
     return getRenderOptions(selection);
