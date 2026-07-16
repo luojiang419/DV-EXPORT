@@ -31,6 +31,16 @@ function verifyHashFile(filePath, hashPath) {
   return expectedLine.slice(0, 64);
 }
 
+function windowsPowerShellEnv(extra = {}) {
+  const environment = { ...process.env, ...extra };
+  for (const key of Object.keys(environment)) {
+    if (key.toUpperCase() === "PSMODULEPATH") {
+      delete environment[key];
+    }
+  }
+  return environment;
+}
+
 for (const artifactPath of Object.values(artifacts)) {
   if (!existsSync(artifactPath) || statSync(artifactPath).size <= 0) {
     throw new Error(`Missing or empty release artifact: ${artifactPath}`);
@@ -55,11 +65,10 @@ try {
     ],
     {
       encoding: "utf-8",
-      env: {
-        ...process.env,
+      env: windowsPowerShellEnv({
         DV_EXPORT_ARCHIVE: artifacts.archive,
         DV_EXPORT_EXTRACT_ROOT: extractRoot
-      }
+      })
     }
   );
   if (expand.status !== 0) {
@@ -96,10 +105,9 @@ try {
     ],
     {
       encoding: "utf-8",
-      env: {
-        ...process.env,
+      env: windowsPowerShellEnv({
         DV_EXPORT_SIGNATURE_FILE: path.join(pluginRoot, "WorkflowIntegration.node")
-      }
+      })
     }
   );
   if (signature.status !== 0 || signature.stdout.trim() !== "Valid") {
@@ -111,10 +119,9 @@ try {
     ["-NoProfile", "-Command", "(Get-AuthenticodeSignature -LiteralPath $env:DV_EXPORT_SIGNATURE_FILE).Status.ToString()"],
     {
       encoding: "utf-8",
-      env: {
-        ...process.env,
+      env: windowsPowerShellEnv({
         DV_EXPORT_SIGNATURE_FILE: artifacts.setup
-      }
+      })
     }
   ).stdout.trim();
 
