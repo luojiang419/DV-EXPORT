@@ -48,8 +48,19 @@ const extractRoot = mkdtempSync(path.join(tmpdir(), "dvexport-verify-"));
 try {
   const expand = spawnSync(
     "powershell.exe",
-    ["-NoProfile", "-Command", "Expand-Archive -LiteralPath $args[0] -DestinationPath $args[1] -Force", artifacts.archive, extractRoot],
-    { encoding: "utf-8" }
+    [
+      "-NoProfile",
+      "-Command",
+      "Expand-Archive -LiteralPath $env:DV_EXPORT_ARCHIVE -DestinationPath $env:DV_EXPORT_EXTRACT_ROOT -Force"
+    ],
+    {
+      encoding: "utf-8",
+      env: {
+        ...process.env,
+        DV_EXPORT_ARCHIVE: artifacts.archive,
+        DV_EXPORT_EXTRACT_ROOT: extractRoot
+      }
+    }
   );
   if (expand.status !== 0) {
     throw new Error(`Unable to expand release archive: ${expand.stderr}`);
@@ -81,10 +92,15 @@ try {
     [
       "-NoProfile",
       "-Command",
-      "(Get-AuthenticodeSignature -LiteralPath $args[0]).Status.ToString()",
-      path.join(pluginRoot, "WorkflowIntegration.node")
+      "(Get-AuthenticodeSignature -LiteralPath $env:DV_EXPORT_SIGNATURE_FILE).Status.ToString()"
     ],
-    { encoding: "utf-8" }
+    {
+      encoding: "utf-8",
+      env: {
+        ...process.env,
+        DV_EXPORT_SIGNATURE_FILE: path.join(pluginRoot, "WorkflowIntegration.node")
+      }
+    }
   );
   if (signature.status !== 0 || signature.stdout.trim() !== "Valid") {
     throw new Error(`WorkflowIntegration.node signature verification failed: ${signature.stdout} ${signature.stderr}`);
@@ -92,8 +108,14 @@ try {
 
   const setupSignature = spawnSync(
     "powershell.exe",
-    ["-NoProfile", "-Command", "(Get-AuthenticodeSignature -LiteralPath $args[0]).Status.ToString()", artifacts.setup],
-    { encoding: "utf-8" }
+    ["-NoProfile", "-Command", "(Get-AuthenticodeSignature -LiteralPath $env:DV_EXPORT_SIGNATURE_FILE).Status.ToString()"],
+    {
+      encoding: "utf-8",
+      env: {
+        ...process.env,
+        DV_EXPORT_SIGNATURE_FILE: artifacts.setup
+      }
+    }
   ).stdout.trim();
 
   console.log(
