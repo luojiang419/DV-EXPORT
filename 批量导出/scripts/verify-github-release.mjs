@@ -27,13 +27,25 @@ function resolveTagSha(repo, tag) {
   return object.sha;
 }
 
+function resolveRelease(repo, tag) {
+  const releases = JSON.parse(ghApi(`repos/${repo}/releases?per_page=100`));
+  const matches = releases.filter((release) => release.tag_name === tag);
+  if (matches.length !== 1) {
+    throw new Error(`Expected exactly one release for ${tag}, got ${matches.length}.`);
+  }
+  return matches[0];
+}
+
 const repo = argument("--repo");
 const version = normalizeSemver(argument("--version"));
 const tag = `v${version}`;
 const expectedSha = argument("--expected-sha");
 const expectedDraft = argument("--draft") === "true";
 const requireLatest = process.argv.includes("--latest");
-const release = JSON.parse(ghApi(`repos/${repo}/releases/tags/${tag}`));
+// GitHub's release-by-tag endpoint returns 404 for draft releases because their
+// Git tag is intentionally not created until publication. The authenticated
+// release collection includes drafts, so use it for both transaction states.
+const release = resolveRelease(repo, tag);
 
 if (release.tag_name !== tag || Boolean(release.draft) !== expectedDraft || release.prerelease) {
   throw new Error("Release tag, draft, or prerelease state is invalid.");
