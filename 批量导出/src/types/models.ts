@@ -10,6 +10,7 @@ export interface TimelineEntry {
   folderId: string;
   mediaPoolItemId?: string;
   frameRate?: number;
+  resolution?: ResolutionOption;
 }
 
 export interface TimelineCacheStatus {
@@ -83,6 +84,8 @@ export interface RenderProfile {
   exportAlpha?: boolean;
 }
 
+export type FrameRateConversionStrategy = "resolve-render" | "ffmpeg-cfr" | "ffmpeg-motion" | "resolve-ui-copy-paste";
+
 export interface ExportBatchRequest {
   selectedTimelines: TimelineEntry[];
   outputDirectory: string;
@@ -103,4 +106,82 @@ export interface ExportBatchResponse {
   succeeded: number;
   failed: number;
   results: ExportBatchResultItem[];
+}
+
+export interface FrameRateConversionRequest {
+  selectedTimelines: TimelineEntry[];
+  targetFrameRate: number;
+  outputDirectory?: string;
+  namingTemplate?: string;
+  settings?: RenderProfile;
+  strategy?: FrameRateConversionStrategy;
+  keepIntermediateFiles?: boolean;
+  destinationFolderName?: string;
+}
+
+export type FrameRateConversionStatus = "queued" | "rendering" | "converted" | "skipped" | "failed";
+
+export interface FrameRateConversionValidation {
+  outputFrameRate?: number;
+  durationSeconds?: number;
+  hasAudio?: boolean;
+}
+
+export interface FrameRateMediaProbeRequest {
+  filePath: string;
+}
+
+export interface FrameRateMediaProbeResponse extends FrameRateConversionValidation {
+  filePath: string;
+  width?: number;
+  height?: number;
+  videoCodec?: string;
+  audioCodec?: string;
+}
+
+export interface FfmpegFrameRateConversionRequest {
+  inputPath: string;
+  outputPath: string;
+  targetFrameRate: number;
+  strategy: Extract<FrameRateConversionStrategy, "ffmpeg-cfr" | "ffmpeg-motion">;
+  overwrite?: boolean;
+  videoCodec?: string;
+  audioCodec?: string;
+  keepSourceAudio?: boolean;
+}
+
+export interface FfmpegFrameRateConversionResponse {
+  outputPath: string;
+  targetFrameRate: number;
+  strategy: Extract<FrameRateConversionStrategy, "ffmpeg-cfr" | "ffmpeg-motion">;
+  validation: FrameRateMediaProbeResponse;
+  stderr?: string;
+}
+
+export interface FrameRateConversionResultItem {
+  timelineName: string;
+  status: FrameRateConversionStatus;
+  success: boolean;
+  reason?: string;
+  sourceFrameRate?: number;
+  targetFrameRate?: number;
+  strategy?: FrameRateConversionStrategy;
+  jobId?: string;
+  outputName?: string;
+  outputPath?: string;
+  intermediatePath?: string;
+  validation?: FrameRateConversionValidation;
+  newTimelineId?: string;
+  newTimelineName?: string;
+  targetFolderName?: string;
+}
+
+export interface FrameRateConversionResponse {
+  targetFrameRate: number;
+  queued?: number;
+  rendering?: number;
+  converted: number;
+  skipped: number;
+  failed: number;
+  results: FrameRateConversionResultItem[];
 }

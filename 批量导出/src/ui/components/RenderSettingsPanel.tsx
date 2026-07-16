@@ -38,7 +38,7 @@ export function RenderSettingsPanel({
   return (
     <div className="settings-grid">
       <label className="field">
-        <span className="field__label">基础预设</span>
+        <span className="field__label">基础预设（先加载）</span>
         <select
           className="field__control"
           value={profile.presetName}
@@ -51,6 +51,7 @@ export function RenderSettingsPanel({
             </option>
           ))}
         </select>
+        <span className="field__hint">导出时先加载预设，再应用下方格式、编码器、分辨率和帧率。</span>
       </label>
 
       <label className="field">

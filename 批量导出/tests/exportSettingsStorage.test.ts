@@ -34,6 +34,7 @@ describe("export settings storage", () => {
           frameRate: 50,
           resolution: { width: 3840, height: 2160 }
         },
+        showAllTimelines: true,
         outputDirectory: "D:/Exports",
         namingTemplate: "{project}_{timeline}"
       })
@@ -42,6 +43,7 @@ describe("export settings storage", () => {
     const result = loadPersistedExportSettings(fallbackProfile, "{timeline}_{date}_{index}");
 
     expect(result.hasManualPresetSelection).toBe(true);
+    expect(result.showAllTimelines).toBe(true);
     expect(result.renderProfile.frameRate).toBe(50);
     expect(result.renderProfile.resolution).toEqual({ width: 3840, height: 2160 });
     expect(result.outputDirectory).toBe("D:/Exports");
@@ -55,6 +57,7 @@ describe("export settings storage", () => {
 
     expect(result).toEqual({
       hasManualPresetSelection: false,
+      showAllTimelines: false,
       renderProfile: fallbackProfile,
       outputDirectory: "",
       namingTemplate: "{timeline}_{date}_{index}"
@@ -64,6 +67,7 @@ describe("export settings storage", () => {
   it("persists settings into local storage", () => {
     savePersistedExportSettings({
       hasManualPresetSelection: true,
+      showAllTimelines: true,
       renderProfile: fallbackProfile,
       outputDirectory: "E:/Queue",
       namingTemplate: "{timeline}_{index}"
@@ -71,6 +75,7 @@ describe("export settings storage", () => {
 
     expect(JSON.parse(window.localStorage.getItem(exportSettingsStorageKey) || "{}")).toEqual({
       hasManualPresetSelection: true,
+      showAllTimelines: true,
       renderProfile: fallbackProfile,
       outputDirectory: "E:/Queue",
       namingTemplate: "{timeline}_{index}"
@@ -93,6 +98,7 @@ describe("export settings storage", () => {
     const result = loadPersistedExportSettings(fallbackProfile, "{timeline}_{date}_{index}");
 
     expect(result.hasManualPresetSelection).toBe(false);
+    expect(result.showAllTimelines).toBe(false);
     expect(result.renderProfile.presetName).toBe("H.264 Master");
   });
 });

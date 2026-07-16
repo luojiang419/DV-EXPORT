@@ -1,15 +1,26 @@
 {
   "name": "dv-batch-export-plugin",
-  "version": "0.1.0",
+  "version": "0.1.26",
   "private": true,
   "description": "DaVinci Resolve Studio 19+ 批量导出 Workflow Integration 插件",
   "scripts": {
     "dev": "node ./node_modules/vite/bin/vite.js",
+    "dev:demo": "node ./node_modules/vite/bin/vite.js --mode demo",
     "build:web": "node ./node_modules/vite/bin/vite.js build",
+    "build:demo": "node ./node_modules/vite/bin/vite.js build --mode demo --outDir build/demo",
+    "build:website": "node ./scripts/build-website.mjs",
+    "build:website:release": "npm run build:installer && npm run build:website",
+    "deploy:website:server": "powershell -NoProfile -ExecutionPolicy Bypass -File ./deploy/deploy-dv-export-server.ps1",
     "build": "node ./scripts/build-plugin.mjs",
+    "build:installer": "node ./scripts/build-installer.mjs",
     "test": "node ./node_modules/vitest/vitest.mjs run",
+    "test:release": "node ./scripts/release-version.mjs --self-test",
+    "test:update-session": "powershell -NoProfile -ExecutionPolicy Bypass -File ./tests/updateSession.integration.ps1",
     "test:watch": "node ./node_modules/vitest/vitest.mjs",
-    "typecheck": "node ./node_modules/typescript/bin/tsc --noEmit"
+    "test:website-backend": "cd website-backend && python -m unittest discover -s tests -v",
+    "dev:website-backend": "cd website-backend && python -m uvicorn app.main:app --host 127.0.0.1 --port 3013",
+    "typecheck": "node ./node_modules/typescript/bin/tsc --noEmit",
+    "typecheck:website": "node ./node_modules/typescript/bin/tsc --noEmit -p website/tsconfig.json"
   },
   "dependencies": {
     "react": "^18.3.1",

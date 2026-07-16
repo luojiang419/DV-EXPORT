@@ -1,0 +1,190 @@
+name: Build and publish DV-EXPORT
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: dv-export-production-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: 批量导出
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_REPOSITORY: ${{ github.repository }}
+
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: 批量导出/package-lock.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: 批量导出/website-backend/requirements.txt
+
+      - name: Resolve release version and idempotency
+        id: version
+        run: |
+          $releasesJson = gh api "repos/$env:RELEASE_REPOSITORY/releases?per_page=100"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $latest = @($releasesJson | ConvertFrom-Json) |
+            Where-Object { -not $_.draft -and -not $_.prerelease } |
+            Sort-Object -Property published_at -Descending |
+            Select-Object -First 1
+          if ($latest) {
+            $latestTag = [string]$latest.tag_name
+            git fetch origin "refs/tags/$latestTag`:refs/tags/$latestTag" --force
+            $latestSha = (git rev-list -n 1 $latestTag).Trim()
+          } else {
+            $latestTag = ""
+            $latestSha = ""
+          }
+
+          if ($latestSha -and $latestSha -eq $env:GITHUB_SHA) {
+            "skip=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+            "Current commit already owns Latest Release $latestTag."
+            exit 0
+          }
+
+          $version = (node ./scripts/release-version.mjs --latest $latestTag).Trim()
+          "skip=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tag=v$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "Resolved release version v$version from source package and Latest $latestTag."
+
+      - name: Install dependencies
+        if: steps.version.outputs.skip != 'true'
+        run: npm ci
+
+      - name: Verify release version resolver
+        if: steps.version.outputs.skip != 'true'
+        run: node ./scripts/release-version.mjs --self-test
+
+      - name: Inject unified release version
+        if: steps.version.outputs.skip != 'true'
+        run: node ./scripts/inject-release-version.mjs --version "${{ steps.version.outputs.version }}"
+
+      - name: Run application tests and type checks
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          npm test
+          npm run typecheck
+          npm run typecheck:website
+          npm run test:update-session
+
+      - name: Run website backend tests
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          python -m pip install --disable-pip-version-check -r ./website-backend/requirements.txt
+          npm run test:website-backend
+
+      - name: Build Windows installer assets
+        if: steps.version.outputs.skip != 'true'
+        run: npm run build:installer
+
+      - name: Verify local release assets
+        if: steps.version.outputs.skip != 'true'
+        run: node ./scripts/verify-release-artifacts.mjs --version "${{ steps.version.outputs.version }}"
+
+      - name: Create draft release and upload assets
+        if: steps.version.outputs.skip != 'true'
+        id: draft
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $tag = "v$version"
+          $root = "./dist/installer"
+          $notes = @"
+          DV-EXPORT $tag
+
+          - Windows x64 Resolve Workflow Integration 插件安装包
+          - 支持自动更新、手动更新、禁止更新三态
+          - 支持自动代理、手动代理、直连三种更新网络模式
+          - 更新包使用 SHA-256 与 GitHub asset digest 双重校验
+
+          安装前请保存工程。自动更新不会无提示退出正在工作的 Resolve。
+          "@
+          gh release create $tag `
+            "$root/DV-EXPORT-$tag-windows-installer.zip" `
+            "$root/DV-EXPORT-$tag-windows-installer.sha256.txt" `
+            "$root/DV-EXPORT-$tag-setup.exe" `
+            "$root/DV-EXPORT-$tag-setup.sha256.txt" `
+            --repo $env:RELEASE_REPOSITORY `
+            --target $env:GITHUB_SHA `
+            --title "DV-EXPORT $tag" `
+            --notes $notes `
+            --draft
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "created=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Verify remote draft transaction
+        if: steps.version.outputs.skip != 'true'
+        run: >-
+          node ./scripts/verify-github-release.mjs
+          --repo "$env:RELEASE_REPOSITORY"
+          --version "${{ steps.version.outputs.version }}"
+          --expected-sha "$env:GITHUB_SHA"
+          --draft true
+
+      - name: Publish verified release
+        if: steps.version.outputs.skip != 'true'
+        run: gh release edit "${{ steps.version.outputs.tag }}" --repo "$env:RELEASE_REPOSITORY" --draft=false --prerelease=false
+
+      - name: Verify public Latest Release
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          $verified = $false
+          for ($attempt = 1; $attempt -le 5; $attempt += 1) {
+            node ./scripts/verify-github-release.mjs `
+              --repo "$env:RELEASE_REPOSITORY" `
+              --version "${{ steps.version.outputs.version }}" `
+              --expected-sha "$env:GITHUB_SHA" `
+              --draft false `
+              --latest
+            if ($LASTEXITCODE -eq 0) {
+              $verified = $true
+              break
+            }
+            Start-Sleep -Seconds 3
+          }
+          if (-not $verified) { throw "Public Latest Release verification failed after retries." }
+
+      - name: Clean up only this run's failed draft
+        if: failure() && steps.draft.outputs.created == 'true'
+        run: |
+          $tag = "${{ steps.version.outputs.tag }}"
+          $releaseJson = gh release view $tag --repo $env:RELEASE_REPOSITORY --json isDraft,targetCommitish 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            $release = $releaseJson | ConvertFrom-Json
+            if ($release.targetCommitish -ne $env:GITHUB_SHA) {
+              throw "Refusing to clean a release owned by another commit."
+            }
+            if (-not $release.isDraft) {
+              gh release edit $tag --repo $env:RELEASE_REPOSITORY --draft=true
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            }
+            gh release delete $tag --repo $env:RELEASE_REPOSITORY --yes --cleanup-tag
+          }

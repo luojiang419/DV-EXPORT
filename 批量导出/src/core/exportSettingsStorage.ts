@@ -2,6 +2,7 @@ import type { RenderProfile } from "../types/models";
 
 export interface PersistedExportSettings {
   hasManualPresetSelection: boolean;
+  showAllTimelines: boolean;
   renderProfile: RenderProfile;
   outputDirectory: string;
   namingTemplate: string;
@@ -57,6 +58,7 @@ export function loadPersistedExportSettings(
 ): PersistedExportSettings {
   const defaults = {
     hasManualPresetSelection: false,
+    showAllTimelines: false,
     renderProfile: fallbackProfile,
     outputDirectory: "",
     namingTemplate: fallbackNamingTemplate
@@ -75,6 +77,7 @@ export function loadPersistedExportSettings(
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     return {
       hasManualPresetSelection: typeof parsed.hasManualPresetSelection === "boolean" ? parsed.hasManualPresetSelection : false,
+      showAllTimelines: typeof parsed.showAllTimelines === "boolean" ? parsed.showAllTimelines : false,
       renderProfile: sanitizeRenderProfile(parsed.renderProfile, fallbackProfile),
       outputDirectory: typeof parsed.outputDirectory === "string" ? parsed.outputDirectory : "",
       namingTemplate: typeof parsed.namingTemplate === "string" ? parsed.namingTemplate : fallbackNamingTemplate

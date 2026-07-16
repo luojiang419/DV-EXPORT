@@ -6,3 +6,10 @@
 !批量导出/dist/.gitkeep
 批量导出/tmp/
 *.log
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.key
+*.pfx
+*.p12

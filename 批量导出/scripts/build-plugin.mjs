@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -22,30 +22,20 @@ function run(command, args) {
   }
 }
 
-function nextVersion(baseVersion) {
+function normalizeVersion(baseVersion) {
   const normalized = baseVersion.startsWith("v") ? baseVersion.slice(1) : baseVersion;
-  const [major, minor, patch] = normalized.split(".").map((item) => Number(item || "0"));
-  let candidate = `${major}.${minor}.${patch}`;
-  const existing = new Set(
-    existsSync(distRoot)
-      ? readdirSync(distRoot, { withFileTypes: true })
-          .filter((item) => item.isDirectory() && item.name.startsWith("v"))
-          .map((item) => item.name.slice(1))
-      : []
-  );
 
-  let currentPatch = patch;
-  while (existing.has(candidate)) {
-    currentPatch += 1;
-    candidate = `${major}.${minor}.${currentPatch}`;
+  if (!/^\d+\.\d+\.\d+$/.test(normalized)) {
+    throw new Error(`package.json version 必须是 X.Y.Z 格式，当前值：${baseVersion}`);
   }
 
-  return candidate;
+  return normalized;
 }
 
 function copyWorkflowIntegrationNode(targetDir) {
   const candidates = [
     process.env.RESOLVE_WORKFLOW_NODE_PATH,
+    path.join(pluginRuntimeRoot, "WorkflowIntegration.node"),
     "C:\\ProgramData\\Blackmagic Design\\DaVinci Resolve\\Support\\Developer\\Workflow Integrations\\Examples\\SamplePlugin\\WorkflowIntegration.node",
     "C:\\ProgramData\\Blackmagic Design\\DaVinci Resolve\\Support\\Workflow Integration Plugins\\SamplePlugin\\WorkflowIntegration.node",
     "/mnt/c/ProgramData/Blackmagic Design/DaVinci Resolve/Support/Developer/Workflow Integrations/Examples/SamplePlugin/WorkflowIntegration.node",
@@ -72,7 +62,7 @@ function copyWorkflowIntegrationNode(targetDir) {
 
 run(process.execPath, ["./node_modules/vite/bin/vite.js", "build"]);
 
-const version = nextVersion(sourcePackage.version);
+const version = normalizeVersion(sourcePackage.version);
 const versionDir = path.join(distRoot, `v${version}`);
 const pluginDir = path.join(versionDir, pluginFolderName);
 

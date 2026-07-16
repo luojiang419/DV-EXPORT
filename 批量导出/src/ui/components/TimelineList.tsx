@@ -4,10 +4,17 @@ interface TimelineListProps {
   timelines: TimelineEntry[];
   selectedIds: string[];
   isLoading?: boolean;
+  emptyMessage?: string;
   onSelect(timelineId: string, modifiers: { ctrlKey: boolean; shiftKey: boolean }): void;
 }
 
-export function TimelineList({ timelines, selectedIds, isLoading = false, onSelect }: TimelineListProps) {
+export function TimelineList({
+  timelines,
+  selectedIds,
+  isLoading = false,
+  emptyMessage = "当前文件夹内没有可识别的时间线。",
+  onSelect
+}: TimelineListProps) {
   if (timelines.length === 0) {
     return (
       <div className="timeline-list-shell">
@@ -17,7 +24,7 @@ export function TimelineList({ timelines, selectedIds, isLoading = false, onSele
             <span>正在读取时间线信息...</span>
           </div>
         ) : (
-          <div className="empty-panel">当前文件夹内没有可识别的时间线。</div>
+          <div className="empty-panel">{emptyMessage}</div>
         )}
       </div>
     );
