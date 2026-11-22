@@ -1,0 +1,16 @@
+[Unit]
+Description=DV EXPORT Sponsor Backend
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=__WORKDIR__
+EnvironmentFile=__WORKDIR__/.env
+ExecStart=__WORKDIR__/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 3013
+Restart=always
+RestartSec=3
+User=www-data
+Group=www-data
+
+[Install]
+WantedBy=multi-user.target
